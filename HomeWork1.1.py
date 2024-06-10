@@ -1,4 +1,7 @@
 from abc import ABC, abstractmethod
+import sys
+import pickle
+from datetime import datetime, timedelta
 
 
 # Абстрактний базовий клас для уявлень
@@ -43,6 +46,82 @@ class ConsoleView(View):
     def show_all_contacts(self, contacts):
         print(contacts)
 
+def load_data(filename="addressbook.pkl"):
+    try:
+        with open(filename, "rb") as f:
+            return pickle.load(f)
+    except FileNotFoundError:
+        return {}
+    
+def save_data(data, filename="addressbook.pkl"):
+    with open(filename, "wb") as f:
+        pickle.dump(data, f)
+
+def parse_input(user_input):
+    if not user_input.strip():
+        return None, []
+    cmd, *args = user_input.split()
+    cmd = cmd.strip().lower()
+    return cmd, args
+
+def add_contact(args, book):
+    if len(args) < 2:
+        return "Please provide name and phone number."
+    name, phone = args[0], args[1]
+    book[name] = {"phone": phone}
+    return f"Contact {name} added."
+
+def change_contact(args, book):
+    if len(args) < 2:
+        return "Please provide name and new phone number."
+    name, phone = args[0], args[1]
+    if name in book:
+        book[name]["phone"] = phone
+        return f"Contact {name} updated."
+    else:
+        return "Contact not found."
+
+def show_phone(args, book):
+    if len(args) < 1:
+        return "Please provide a name."
+    name = args[0]
+    if name in book:
+        return f"{name}'s phone number is {book[name]['phone']}."
+    else:
+        return "Contact not found."
+
+def add_birthday(args, book):
+    if len(args) < 2:
+        return "Please provide name and birthday (YYYY-MM-DD)."
+    name, birthday = args[0], args[1]
+    if name in book:
+        book[name]["birthday"] = birthday
+        return f"Birthday for {name} added."
+    else:
+        return "Contact not found."
+
+def show_birthday(args, book):
+    if len(args) < 1:
+        return "Please provide a name."
+    name = args[0]
+    if name in book and "birthday" in book[name]:
+        return f"{name}'s birthday is {book[name]['birthday']}."
+    else:
+        return "Birthday not found for this contact."
+
+def birthdays(book):
+    upcoming_birthdays = []
+    today = datetime.today()
+    next_week = today + timedelta(days=7)
+    for name, details in book.items():
+        if "birthday" in details:
+            birthday = datetime.strptime(details["birthday"], "%Y-%m-%d")
+            if today <= birthday <= next_week:
+                upcoming_birthdays.append(f"{name}: {details['birthday']}")
+    if upcoming_birthdays:
+        return "Upcoming birthdays:\n" + "\n".join(upcoming_birthdays)
+    else:
+        return "No upcoming birthdays within the next week."
 
 def main():
     book = load_data()
